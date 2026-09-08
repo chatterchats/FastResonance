@@ -1,4 +1,4 @@
--- Fast Resonance v1.0.0
+-- Fast Resonance v1.0.1
 -- Star Wars Zero Company / UE4SS
 --
 -- Speeds selected Coil Resonance presentations while preserving their normal
@@ -24,12 +24,16 @@
 --
 -- Scope is deliberately narrow: no global animation, MovieScene, or Delay
 -- acceleration is used.
+--
+-- v1.0.1:
+--   Hardened UE4SS parameter handling after Windows crash dumps showed
+--   TrivialObject errors caused by calling :get() on ordinary UObject userdata.
 
 local Settings = require("MXM")
 local Targets = require("targets")
 
 local TAG = "[FastResonance]"
-local VERSION = "1.0.0"
+local VERSION = "1.0.1"
 
 local MIN_SPEED = 0.25
 local MAX_SPEED = 8.0
@@ -52,20 +56,24 @@ local function debug_log(fmt, ...)
     -- Keep this helper quiet so existing narrow debug call sites need no churn.
 end
 
-local function unwrap(v)
-    if type(v) == "userdata" then
-        local ok, value = pcall(function()
-            return v:get()
-        end)
-        if ok then
-            return value
-        end
-    end
-    return v
+-- UE4SS RegisterHook and TArray:ForEach callbacks provide
+-- RemoteUnrealParam/LocalUnrealParam wrappers. Only those documented callback
+-- boundaries should ever be dereferenced with :get().
+--
+-- Do NOT probe arbitrary userdata for a "get" method: UObject.__index returns
+-- a non-nil placeholder for missing members in current UE4SS builds, and
+-- attempting to call that placeholder can produce "TrivialObject" errors.
+local function param_get(param)
+    if param == nil then return nil end
+
+    local ok, value = pcall(function()
+        return param:get()
+    end)
+
+    return ok and value or nil
 end
 
 local function valid(obj)
-    obj = unwrap(obj)
     if not obj then return false end
 
     local ok, result = pcall(function()
@@ -76,7 +84,6 @@ local function valid(obj)
 end
 
 local function full_name(obj)
-    obj = unwrap(obj)
     if not valid(obj) then
         return "<invalid>"
     end
@@ -89,18 +96,16 @@ local function full_name(obj)
 end
 
 local function get_prop(obj, name)
-    obj = unwrap(obj)
     if obj == nil then return nil end
 
     local ok, value = pcall(function()
         return obj[name]
     end)
 
-    return ok and unwrap(value) or nil
+    return ok and value or nil
 end
 
 local function safe_len(arr)
-    arr = unwrap(arr)
     if arr == nil then return 0 end
 
     local ok, n = pcall(function()
@@ -116,12 +121,11 @@ local function safe_len(arr)
 end
 
 local function array_for_each(arr, cb)
-    arr = unwrap(arr)
     if arr == nil then return false end
 
     local ok = pcall(function()
         arr:ForEach(function(index, elem)
-            cb(index, unwrap(elem))
+            cb(index, param_get(elem))
         end)
     end)
 
@@ -136,7 +140,7 @@ local function array_for_each(arr, cb)
         end)
 
         if ok_elem then
-            cb(i, unwrap(elem))
+            cb(i, elem)
         end
     end
 
@@ -201,7 +205,6 @@ end
 ----------------------------------------------------------------------------
 
 local function inspect_target_montage(montage)
-    montage = unwrap(montage)
     if not valid(montage) then
         return nil
     end
@@ -247,8 +250,7 @@ local function for_each_primary_anim_instance(cb)
     end
 
     local function consider(obj)
-        obj = unwrap(obj)
-        if not valid(obj) then return end
+            if not valid(obj) then return end
 
         local name = full_name(obj)
         if name:find(PRIMARY_ANIM_TOKEN, 1, true) then
@@ -265,7 +267,7 @@ local function for_each_primary_anim_instance(cb)
 
     local ok_each = pcall(function()
         objects:ForEach(function(_, elem)
-            consider(unwrap(elem))
+            consider(param_get(elem))
         end)
     end)
 
@@ -311,7 +313,6 @@ local function apply_to_live_montage(montage, info)
             return anim:GetCurrentActiveMontage()
         end)
 
-        active = unwrap(active)
 
         if not ok or not valid(active) then
             return
@@ -421,7 +422,7 @@ do
         else
             pcall(function()
                 objects:ForEach(function(_, elem)
-                    local montage = unwrap(elem)
+                    local montage = param_get(elem)
                     if valid(montage) then
                         detect_and_schedule_montage(montage)
                     end
@@ -436,7 +437,6 @@ end
 ----------------------------------------------------------------------------
 
 local function get_sequence_player(actor)
-    actor = unwrap(actor)
     if not valid(actor) then
         return nil
     end
@@ -447,7 +447,6 @@ local function get_sequence_player(actor)
         player = actor:GetSequencePlayer()
     end)
 
-    player = unwrap(player)
 
     if valid(player) then
         return player
@@ -464,7 +463,6 @@ local function get_sequence_player(actor)
 end
 
 local function identify_sequence_target(state)
-    state = unwrap(state)
     if not valid(state) then
         return nil, nil
     end
@@ -486,7 +484,6 @@ local function identify_sequence_target(state)
 end
 
 local function apply_camera_rate(state, reason)
-    state = unwrap(state)
     if not valid(state) then
         return false
     end
@@ -581,7 +578,7 @@ local function register_choreo_hooks()
                 RegisterHook(
                     path,
                     function(Context, ...)
-                        local state = unwrap(Context)
+                        local state = param_get(Context)
                         if not valid(state) then return end
 
                         if apply_camera_rate(state, short .. " PRE") then
@@ -673,7 +670,6 @@ local SHARED_SUFFERING_DELAY_SECONDS = 2.0
 local DELAY_EPSILON = 0.01
 
 local function is_shared_suffering_simple_delay(world)
-    world = unwrap(world)
     if not valid(world) then return false end
 
     local name = full_name(world)
@@ -691,12 +687,12 @@ local function register_shared_suffering_delay_hook()
                     return
                 end
 
-                local world = unwrap(WorldContextObject)
+                local world = param_get(WorldContextObject)
                 if not is_shared_suffering_simple_delay(world) then
                     return
                 end
 
-                local original = tonumber(unwrap(Duration))
+                local original = tonumber(param_get(Duration))
                 if original == nil then
                     return
                 end

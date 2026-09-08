@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "community.fast-resonance",
   "name": "Fast Resonance",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Speeds Coil Resonance Transfer and Shared Suffering presentation timings with optional per-ability multipliers through MXM Config Manager.",
   "game": {
     "appId": 2075800

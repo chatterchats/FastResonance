@@ -1,7 +1,17 @@
-# Fast Resonance 1.0.0
+# Fast Resonance 1.0.1
 
 A UE4SS Lua mod for **Star Wars Zero Company** that shortens selected Coil
 Resonance presentation sequences without globally accelerating combat.
+
+
+## 1.0.1 crash hotfix
+
+Fixes unsafe UE4SS parameter handling discovered from user-submitted crash
+dumps. Fast Resonance no longer attempts to call `.get()` on arbitrary userdata;
+it only dereferences the documented parameter wrappers supplied by UE4SS hook
+and container callbacks.
+
+No gameplay timing or configuration defaults were changed.
 
 ## Supported abilities
 
