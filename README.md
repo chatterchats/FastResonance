@@ -187,11 +187,17 @@ supported build is required for behavior changes.
 The manual **Release to Nexus Mods** workflow packages and publishes the mod.
 Before running it:
 
-1. Keep the version synchronized in `src/Fast Resonance/Scripts/main.lua`,
-   `src/Fast Resonance/MXM/settings.lua`, `src/Fast Resonance/modinfo.json`, and
-   `src/Fast Resonance/zcom-mod.json`.
-2. Add a matching, non-empty version section to
+1. Record the release notes under `## [Unreleased]` in
    [`CHANGELOG.md`](CHANGELOG.md).
+2. Run the version bump script with `patch`, `minor`, or `major`:
+
+   ```bash
+   ./bump_version.py patch
+   ```
+
+   The argument is case-insensitive. The script validates and updates all four
+   version declarations, promotes the Unreleased notes to the new version
+   section, and leaves an empty Unreleased section.
 3. Verify the package through ZCOM Mod Manager and a clean manual UE4SS
    installation.
 4. Confirm both abilities with MXM installed and with MXM absent.
