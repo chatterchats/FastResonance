@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A manual GitHub Actions workflow for packaging releases and uploading them to
+  Nexus Mods.
+
 ## [1.0.2]
 
 ### Added
