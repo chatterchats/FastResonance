@@ -1,7 +1,7 @@
 return {
     id      = "FastResonance",
     name    = "Fast Resonance",
-    version = "1.0.1",
+    version = "1.0.2",
     description = "Speeds selected Coil Resonance ability presentations.",
 
     settings = {

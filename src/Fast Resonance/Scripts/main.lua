@@ -1,4 +1,4 @@
--- Fast Resonance v1.0.1
+-- Fast Resonance v1.0.2
 -- Star Wars Zero Company / UE4SS
 --
 -- Speeds selected Coil Resonance presentations while preserving their normal
@@ -24,16 +24,12 @@
 --
 -- Scope is deliberately narrow: no global animation, MovieScene, or Delay
 -- acceleration is used.
---
--- v1.0.1:
---   Hardened UE4SS parameter handling after Windows crash dumps showed
---   TrivialObject errors caused by calling :get() on ordinary UObject userdata.
 
 local Settings = require("MXM")
 local Targets = require("targets")
 
 local TAG = "[FastResonance]"
-local VERSION = "1.0.1"
+local VERSION = "1.0.2"
 
 local MIN_SPEED = 0.25
 local MAX_SPEED = 8.0
