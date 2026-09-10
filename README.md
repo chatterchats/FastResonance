@@ -141,6 +141,8 @@ Target names and settings mappings live in
 │       └── release-nexus.yml
 ├── CHANGELOG.md
 ├── README.md
+├── scripts/
+│   └── bump_version.py
 └── src/
     └── Fast Resonance/
         ├── enabled.txt
@@ -192,7 +194,7 @@ Before running it:
 2. Run the version bump script with `patch`, `minor`, or `major`:
 
    ```bash
-   ./bump_version.py patch
+   ./scripts/bump_version.py patch
    ```
 
    The argument is case-insensitive. The script validates and updates all four

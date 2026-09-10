@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 from re import Match, Pattern
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 CHANGELOG = ROOT / "CHANGELOG.md"
 MODINFO = ROOT / "src/Fast Resonance/modinfo.json"
 ZCOM_MOD = ROOT / "src/Fast Resonance/zcom-mod.json"
