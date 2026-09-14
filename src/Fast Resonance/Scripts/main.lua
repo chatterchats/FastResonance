@@ -1,4 +1,4 @@
--- Fast Resonance v1.0.2
+-- Fast Resonance v1.0.3
 -- Star Wars Zero Company / UE4SS
 --
 -- Speeds selected Coil Resonance presentations while preserving their normal
@@ -39,7 +39,7 @@ local Settings = require("MXM")
 local Targets = require("targets")
 
 local TAG = "[FastResonance]"
-local VERSION = "1.0.2"
+local VERSION = "1.0.3"
 
 local MIN_SPEED = 0.25
 local MAX_SPEED = 8.0
