@@ -27,9 +27,11 @@
 
 package.loaded["hook_registry"] = nil
 package.loaded["actions"] = nil
+package.loaded["logging"] = nil
 
 local Runtime = require("hook_registry")
 local Actions = require("actions")
+local Logging = require("logging")
 local runtime = Runtime.start("FastResonanceRuntime", {
     clear_all = FastResonanceClearDelayedActionsOnReload ~= false,
 })
@@ -42,6 +44,8 @@ local VERSION = "1.0.2"
 local MIN_SPEED = 0.25
 local MAX_SPEED = 8.0
 
+local logger = Logging.new(runtime, { tag = TAG })
+
 local RETRY_MS = {0, 2, 5, 10, 15, 20, 30, 45, 60, 90, 130, 180, 250}
 local PRIMARY_ANIM_TOKEN = "ABP_BR_Humanoid_Base_C"
 local CHOREO_CLASS_SHORT = "SMstate_PlayChoreographedSequence_C"
@@ -52,7 +56,7 @@ local choreo_class = nil
 local choreo_hooks_registered = false
 
 local function log(fmt, ...)
-    print(string.format(TAG .. " " .. fmt .. "\n", ...))
+    logger:log(fmt, ...)
 end
 
 local function debug_log(fmt, ...)
@@ -68,6 +72,15 @@ local actions = Actions.new(runtime, {
     end,
     log = log,
 })
+
+logger:transition("runtime", "loading", "version=" .. VERSION)
+if logger.LOG_PATH then
+    log("Dedicated log | %s", logger.LOG_PATH)
+else
+    log(
+        "WARNING: fast_resonance.log could not be opened; diagnostics remain available in UE4SS.log"
+    )
+end
 
 -- UE4SS RegisterHook and TArray:ForEach callbacks provide
 -- RemoteUnrealParam/LocalUnrealParam wrappers. Only those documented callback
@@ -638,6 +651,7 @@ local function register_choreo_hooks()
             end)
 
             if ok then
+                logger:transition("hook", "registered", path)
                 debug_log("CHOREO HOOK READY | %s", path)
             else
                 log(
@@ -785,6 +799,11 @@ local function register_shared_suffering_delay_hook()
             tostring(err)
         )
     else
+        logger:transition(
+            "hook",
+            "registered",
+            "/Script/Engine.KismetSystemLibrary:Delay"
+        )
         debug_log(
             "Shared Suffering exact Delay hook ready"
         )
@@ -829,3 +848,4 @@ log(
     Settings.IsAvailable() and "available" or "defaults-only",
     setting_summary()
 )
+logger:transition("runtime", "ready", setting_summary())

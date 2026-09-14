@@ -63,8 +63,9 @@ end
 package.loaded.MXM = Settings
 package.loaded.targets = nil
 
-local original_print = print
+local original_print, original_open = print, io.open
 print = function() end
+io.open = function() return nil, "disabled by test" end
 assert(loadfile(scripts .. "/main.lua"))()
 local first = assert(FastResonanceRuntime)
 assert(first.generation == 1 and first.alive)
@@ -131,5 +132,6 @@ assert(hooks["/Game/Test.SMstate_PlayChoreographedSequence_C:OnStateBegin"])
 
 second:teardown("test complete")
 print = original_print
+io.open = original_open
 assert(unregister_count == 3 and clear_count == 4)
 print("Fast Resonance bootstrap and same-state reload tests passed")

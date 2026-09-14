@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and choreography readiness work.
 - A central runtime registry that retains both hook IDs, unregisters hooks,
   cancels pending actions, and guards persistent callbacks across hot reloads.
+- A dedicated `fast_resonance.log` beside the installed mod with UTC timestamps,
+  runtime generations, and explicit runtime/hook lifecycle transitions.
 
 ### Changed
 

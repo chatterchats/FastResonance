@@ -153,6 +153,7 @@ Target names and settings mappings live in
         └── Scripts/
             ├── actions.lua
             ├── hook_registry.lua
+            ├── logging.lua
             ├── main.lua
             ├── MXM.lua
             └── targets.lua
@@ -176,6 +177,7 @@ compile or bundle step.
 
    ```bash
    luajit tests/bootstrap_test.lua "src/Fast Resonance/Scripts"
+   luajit tests/logging_test.lua "src/Fast Resonance/Scripts"
    luajit tests/runtime_test.lua "src/Fast Resonance/Scripts"
    ```
 
@@ -242,7 +244,11 @@ When reporting a bug, include:
 - whether MXM and ZCOM Mod Manager are installed;
 - the configured ability settings;
 - reproduction steps; and
-- the relevant UE4SS log excerpt or crash dump.
+- the relevant `fast_resonance.log` and UE4SS log excerpt or crash dump.
+
+`fast_resonance.log` is written beside the installed mod. Its entries include
+UTC timestamps and runtime generations so activity from a hot-reloaded instance
+can be separated from callbacks belonging to an earlier session.
 
 Keep changes narrowly scoped. Any new timing target must be gated to its owning
 ability context; global animation or delay acceleration is out of scope.
