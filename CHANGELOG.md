@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A manual GitHub Actions workflow for packaging releases and uploading them to
   Nexus Mods.
+- Owned UE4SS delayed-action handles and cancellable retry groups for montage
+  and choreography readiness work.
+- A central runtime registry that retains both hook IDs, unregisters hooks,
+  cancels pending actions, and guards persistent callbacks across hot reloads.
+
+### Changed
+
+- Cancel superseded retry groups immediately and cancel their remaining work as
+  soon as the matching montage or camera rate has been applied.
+- Reuse one live dispatcher for montage discovery and MXM settings changes
+  across same-state reloads.
+- Retire the broad choreography-class construction observer after one match and
+  defer function discovery until its construction callback has unwound.
 
 ## [1.0.2]
 

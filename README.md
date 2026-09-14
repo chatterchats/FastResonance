@@ -51,7 +51,7 @@ approximately half a second.
 
 - **Star Wars: Zero Company**
 - A working [UE4SS](https://docs.ue4ss.com/dev/installation-guide.html)
-  installation for the game
+  installation for the game with the delayed game-thread action API
 - Optional:
   [Mixamoo Mod Config Manager](https://www.nexusmods.com/starwarszerocompany/mods/149)
   for in-game configuration
@@ -151,6 +151,8 @@ Target names and settings mappings live in
         ├── MXM/
         │   └── settings.lua
         └── Scripts/
+            ├── actions.lua
+            ├── hook_registry.lua
             ├── main.lua
             ├── MXM.lua
             └── targets.lua
@@ -170,19 +172,28 @@ compile or bundle step.
 
 2. Copy or link `src/Fast Resonance` into the game's `ue4ss/Mods` directory.
 3. Make changes to the Lua sources.
-4. Reload all mods from the UE4SS GUI console, or use the configured hot-reload
+4. Run the runtime regression test:
+
+   ```bash
+   luajit tests/bootstrap_test.lua "src/Fast Resonance/Scripts"
+   luajit tests/runtime_test.lua "src/Fast Resonance/Scripts"
+   ```
+
+5. Reload all mods from the UE4SS GUI console, or use the configured hot-reload
    shortcut.
-5. Confirm that the UE4SS log contains a line beginning with:
+6. Confirm that the UE4SS log contains a line beginning with:
 
    ```text
    [FastResonance] Loaded v
    ```
 
-6. Exercise both supported abilities in game and verify their body animation,
+7. Exercise both supported abilities in game and verify their body animation,
    camera sequence, reaction, and final delay behavior as applicable.
 
-This repository has no automated test suite. In-game verification against a
-supported build is required for behavior changes.
+The runtime tests cover production bootstrap/reload wiring, action ownership,
+group cancellation, hook-ID cleanup, generation guards, and persistent-dispatcher
+reuse. In-game verification against a supported build remains required for
+behavior changes.
 
 ## Releasing
 

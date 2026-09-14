@@ -25,6 +25,14 @@
 -- Scope is deliberately narrow: no global animation, MovieScene, or Delay
 -- acceleration is used.
 
+package.loaded["hook_registry"] = nil
+package.loaded["actions"] = nil
+
+local Runtime = require("hook_registry")
+local Actions = require("actions")
+local runtime = Runtime.start("FastResonanceRuntime", {
+    clear_all = FastResonanceClearDelayedActionsOnReload ~= false,
+})
 local Settings = require("MXM")
 local Targets = require("targets")
 
@@ -51,6 +59,15 @@ local function debug_log(fmt, ...)
     -- Detailed user-facing diagnostics were removed from MXM in v0.12.
     -- Keep this helper quiet so existing narrow debug call sites need no churn.
 end
+
+local actions = Actions.new(runtime, {
+    valid = function(obj)
+        if not obj then return false end
+        local ok, result = pcall(function() return obj:IsValid() end)
+        return ok and result == true
+    end,
+    log = log,
+})
 
 -- UE4SS RegisterHook and TArray:ForEach callbacks provide
 -- RemoteUnrealParam/LocalUnrealParam wrappers. Only those documented callback
@@ -369,9 +386,11 @@ local function detect_and_schedule_montage(montage)
     if not valid(montage) then return end
 
     local montage_name = full_name(montage)
+    local action_group = "montage:" .. montage_name
+    actions:cancel_group(action_group, "new montage readiness cycle")
 
     for _, delay_ms in ipairs(RETRY_MS) do
-        ExecuteWithDelay(delay_ms, function()
+        actions:schedule_after(action_group, delay_ms, function()
             if not valid(montage) then return end
             if successfully_applied[montage_name] then return end
 
@@ -393,14 +412,25 @@ local function detect_and_schedule_montage(montage)
             end
 
             if info then
-                apply_to_live_montage(montage, info)
+                if apply_to_live_montage(montage, info) then
+                    actions:cancel_group(
+                        action_group,
+                        "montage rate applied"
+                    )
+                end
             end
-        end)
+        end, montage)
     end
 end
 
-NotifyOnNewObject(
-    "/Script/Engine.AnimMontage",
+runtime:bind(
+    "notify:/Script/Engine.AnimMontage",
+    function(dispatch)
+        NotifyOnNewObject(
+            "/Script/Engine.AnimMontage",
+            dispatch
+        )
+    end,
     detect_and_schedule_montage
 )
 
@@ -571,7 +601,7 @@ local function register_choreo_hooks()
             local path = name:gsub("^Function%s+", "")
 
             local ok, err = pcall(function()
-                RegisterHook(
+                runtime:register_hook(
                     path,
                     function(Context, ...)
                         local state = param_get(Context)
@@ -583,15 +613,25 @@ local function register_choreo_hooks()
 
                         -- Depending on entry point, the sequence actor/player
                         -- may be assigned a few milliseconds later.
+                        local action_group = "choreo:" .. full_name(state)
+                        actions:cancel_group(
+                            action_group,
+                            "new choreography readiness cycle"
+                        )
                         for _, delay_ms in ipairs({0, 5, 15, 30, 60}) do
-                            ExecuteWithDelay(delay_ms, function()
+                            actions:schedule_after(action_group, delay_ms, function()
                                 if valid(state) then
-                                    apply_camera_rate(
+                                    if apply_camera_rate(
                                         state,
                                         short .. " +" .. tostring(delay_ms) .. "ms"
-                                    )
+                                    ) then
+                                        actions:cancel_group(
+                                            action_group,
+                                            "camera rate applied"
+                                        )
+                                    end
                                 end
-                            end)
+                            end, state)
                         end
                     end
                 )
@@ -630,18 +670,28 @@ end
 
 discover_choreo_class()
 
-NotifyOnNewObject("/Script/CoreUObject.Class", function(cls)
-    if valid(choreo_class) or not valid(cls) then
-        return
-    end
+if not valid(choreo_class) then
+    NotifyOnNewObject("/Script/CoreUObject.Class", function(cls)
+        if not runtime.alive then return true end
+        if valid(choreo_class) then return true end
+        if not valid(cls) then return false end
 
-    local name = full_name(cls)
+        local name = full_name(cls)
+        if not name:find(CHOREO_CLASS_SHORT, 1, true) then return false end
 
-    if name:find(CHOREO_CLASS_SHORT, 1, true) then
-        choreo_class = cls
-        register_choreo_hooks()
-    end
-end)
+        -- Leave StaticConstructObject_Internal before enumerating the new
+        -- class's functions and registering hooks against them.
+        actions:cancel_group(
+            "choreo_class_discovery",
+            "target choreography class constructed"
+        )
+        actions:schedule_after("choreo_class_discovery", 0, function()
+            choreo_class = cls
+            register_choreo_hooks()
+        end, cls)
+        return true
+    end)
+end
 
 ----------------------------------------------------------------------------
 -- Shared Suffering exact post-sequence delay acceleration
@@ -676,7 +726,7 @@ end
 
 local function register_shared_suffering_delay_hook()
     local ok, err = pcall(function()
-        RegisterHook(
+        runtime:register_hook(
             "/Script/Engine.KismetSystemLibrary:Delay",
             function(Context, WorldContextObject, Duration, ...)
                 if Settings.Get("shared_suffering_enabled", true) ~= true then
@@ -747,12 +797,16 @@ register_shared_suffering_delay_hook()
 -- MXM live settings
 ----------------------------------------------------------------------------
 
-Settings.OnChange(function(_, changed)
-    log(
-        "Settings changed | %s | applies to the next matching presentation",
-        table.concat(changed, ", ")
-    )
-end)
+runtime:bind(
+    "mxm:on-change",
+    function(dispatch) Settings.OnChange(dispatch) end,
+    function(_, changed)
+        log(
+            "Settings changed | %s | applies to the next matching presentation",
+            table.concat(changed, ", ")
+        )
+    end
+)
 
 local function setting_summary()
     local function state(key)
@@ -769,8 +823,9 @@ local function setting_summary()
 end
 
 log(
-    "Loaded v%s | MXM=%s | %s",
+    "Loaded v%s | runtime-generation=%s | MXM=%s | %s",
     VERSION,
+    tostring(runtime.generation),
     Settings.IsAvailable() and "available" or "defaults-only",
     setting_summary()
 )
