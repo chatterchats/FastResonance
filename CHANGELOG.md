@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4]
+
+### Fixed
+
+- Address the suspected initialization race behind #2 by handing setup to the
+  game thread once, instead of submitting immediately runnable montage retries from the
+  loader while it is still initializing the mod.
+- Gate combat work on the mission actor's readiness and active status. Cancel
+  session work on mission ending, actor EndPlay, map travel, and save reload.
+- Recover an existing mission after mod reload without scanning resident
+  montages, and retry incomplete choreography hook discovery after relevant
+  mission or class events.
+- Refresh reused montage rates from presentation events so subsequent uses
+  respect changed settings, including restoring vanilla timing when disabled.
+- Resolve choreography functions by their exact asset paths. The previous
+  `FindObject("Class", ...)` lookup excludes the game's generated state-machine
+  class and leaves preloaded choreography unhooked after mission activation.
+- Log completion of all three choreography hooks and identify missing functions
+  when bounded discovery expires.
+- Compare level owning worlds when filtering mission playback. The mission actor
+  can report a streamed `_Gameplay` world while characters and cinematics report
+  `_Root`; comparing those raw pointers incorrectly rejected both animation and
+  camera acceleration. Resolve `PersistentLevel.OwningWorld` before comparison.
+
+Both abilities' playback acceleration was verified in-game, including Shared
+Suffering's confirmation sequence and final delay. The intermittent startup
+crash still requires confirmation on the affected user's Wine/Proton setup;
+automated coverage models lifecycle and scheduling boundaries rather than
+UE4SS's native thread race.
+
 ## [1.0.3]
 
 ### Added

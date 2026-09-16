@@ -129,6 +129,19 @@ speed change:
 - the delay hook changes only the two-second Shared Suffering end hold, leaving
   unrelated delays untouched.
 
+Startup publishes one game-thread setup action and then returns. It does not
+scan resident montages or submit presentation retries on the loader thread.
+Combat work begins only when a live `BRGameMissionActor` reports
+`bIsMissionActorReady`, active mission status, and that it is not ending.
+Mission lifecycle and construction events trigger bounded readiness checks;
+the main menu does not run a permanent readiness poll.
+
+Montage construction and matching choreography events trigger presentation
+work within that mission. A one-time game-thread mission lookup also supports
+reloading the mod during combat. Pending work is cancelled on mission ending,
+actor EndPlay, map travel, and mission save reload. Animation instances and
+sequence states must belong to the active mission's world.
+
 Target names and settings mappings live in
 [`src/Fast Resonance/Scripts/targets.lua`](src/Fast%20Resonance/Scripts/targets.lua).
 
@@ -152,9 +165,11 @@ Target names and settings mappings live in
         │   └── settings.lua
         └── Scripts/
             ├── actions.lua
+            ├── feature.lua
             ├── hook_registry.lua
             ├── logging.lua
             ├── main.lua
+            ├── mission.lua
             ├── MXM.lua
             └── targets.lua
 ```
@@ -194,8 +209,31 @@ compile or bundle step.
 
 The runtime tests cover production bootstrap/reload wiring, action ownership,
 group cancellation, hook-ID cleanup, generation guards, and persistent-dispatcher
-reuse. In-game verification against a supported build remains required for
-behavior changes.
+reuse. The bootstrap harness rejects loader-side object discovery and hook
+installation, and exercises delayed mission readiness, partial hook discovery,
+save loads, map changes, mission teardown, world isolation, and reused players.
+It also models exact class matching and separately loaded choreography functions,
+including recovery after a class event and failed hook installation.
+The mission model includes a streamed gameplay world whose level belongs to the
+root world used by characters and cinematics, and rejects unavailable, cyclic,
+or unrelated world ownership.
+
+For the startup fix, repeat cold launches on the affected UE4SS/Wine setup,
+then verify new missions, loading a combat save, mod reload during combat,
+mission restart/exit, and both supported abilities (including repeated uses
+after changing settings). Check `fast_resonance.log` for mission transitions and
+readiness timeouts. The mocked scheduler cannot reproduce or prove elimination
+of UE4SS's native concurrency race; in-game verification remains required.
+
+After mission activation, look for `Choreography hooks ready | 3/3`, then
+`LIVE RATE APPLIED` and `CAMERA RATE APPLIED` when using a supported ability.
+A `Loaded` or mission-active entry alone does not confirm that acceleration is
+working. If discovery times out, its log entry names the missing functions.
+
+In-game validation on September 16, 2026 confirmed Resonance Transfer body and
+camera playback at 3x, and Shared Suffering body, camera, and confirmation
+playback at 4x, with its final delay reduced from 2 seconds to 0.5 seconds.
+The intermittent startup crash still needs confirmation from the affected user.
 
 ## Releasing
 
