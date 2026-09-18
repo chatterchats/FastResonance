@@ -124,7 +124,7 @@ jobs:
                   str(mod_file.get("name", "<unnamed>")) for mod_file in active_files
               )
               raise SystemExit(
-                  "Expected exactly one active Nexus mod file for Faster Resonance, "
+                  "Expected exactly one active Nexus mod file for Fast Resonance, "
                   f"found {len(active_files)}: {names or '<none>'}"
               )
 
@@ -154,7 +154,7 @@ jobs:
           file_id: ${{ steps.nexus.outputs.file_id }}
           filename: Fast Resonance v${{ steps.release.outputs.version }}.zip
           version: ${{ steps.release.outputs.version }}
-          display_name: Faster Resonance
+          display_name: Fast Resonance
           mod_id: ${{ steps.nexus.outputs.mod_id }}
           primary_mod_manager_download: true
           update_mod_version: true
