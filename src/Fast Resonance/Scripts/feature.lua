@@ -12,6 +12,7 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         .. "SMstate_PlayChoreographedSequence." .. CHOREO_CLASS_SHORT
 
     local target_montages = {}
+    local anim_instances = {}
     local choreo_paths = {}
     local mission
     local choreo_hooks_registered = false
@@ -154,15 +155,16 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
 
     local function matching_target(name, list, context_name)
         for _, target in ipairs(list) do
-            if name:find(target.token, 1, true) then
-                if target.context_token then
-                    if context_name
-                        and context_name:find(target.context_token, 1, true) then
-                        return target
-                    end
-                else
-                    return target
-                end
+            -- Some abilities reuse generic camera assets. Their captured state
+            -- machine instance is the selector; never allow an empty selector.
+            local selected = target.token or target.context_token or target.context_pattern
+            local asset_matches = not target.token or name:find(target.token, 1, true)
+            local context_matches = not target.context_token
+                or (context_name and context_name:find(target.context_token, 1, true))
+            local pattern_matches = not target.context_pattern
+                or (context_name and context_name:find(target.context_pattern))
+            if selected and asset_matches and context_matches and pattern_matches then
+                return target
             end
         end
 
@@ -212,35 +214,53 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         return result
     end
 
-    local function for_each_primary_anim_instance(cb)
+    local function remember_anim_instance(obj)
+        if not valid(obj) then return end
+        local name = full_name(obj)
+        if name:find(PRIMARY_ANIM_TOKEN, 1, true) then
+            -- Construction can precede world/mesh readiness. Retain the candidate
+            -- and check current ownership on every use, never cache that verdict.
+            anim_instances[name] = obj
+        end
+    end
+
+    local function seed_anim_instances()
         local ok, objects = pcall(FindAllOf, "AnimInstance")
         if not ok or objects == nil then
+            log("WARNING: animation cache seed unavailable | %s", tostring(objects))
             return
-        end
-
-        local function consider(obj)
-            local name = full_name(obj)
-            if name:find(PRIMARY_ANIM_TOKEN, 1, true) then
-                if not mission:owns(obj) then return end
-                cb(obj, name)
-            end
         end
 
         if type(objects) == "table" then
-            for _, obj in pairs(objects) do
-                consider(obj)
-            end
-            return
-        end
-
-        local ok_each = pcall(function()
-            objects:ForEach(function(_, elem)
-                consider(param_get(elem))
+            for _, obj in pairs(objects) do remember_anim_instance(obj) end
+        else
+            pcall(function()
+                objects:ForEach(function(_, elem) remember_anim_instance(param_get(elem)) end)
             end)
-        end)
+        end
+        local count = 0
+        for _ in pairs(anim_instances) do count = count + 1 end
+        log("Animation cache ready | candidates=%d | one search per mission activation", count)
+    end
 
-        if not ok_each then
-            consider(objects)
+    runtime:bind("notify:anim-instance", function(dispatch)
+        NotifyOnNewObject("/Script/Engine.AnimInstance", dispatch)
+    end, function(obj)
+        if not mission or not mission:is_active() then return end
+        -- Inspect only after construction unwinds, on the owning mission's game
+        -- thread. Lifecycle cancellation/generation guards retire queued additions.
+        mission:schedule("anim_cache_add", 0, function()
+            remember_anim_instance(obj)
+        end, obj)
+    end)
+
+    local function for_each_primary_anim_instance(cb)
+        for name, obj in pairs(anim_instances) do
+            if not valid(obj) then
+                anim_instances[name] = nil
+            else
+                if mission:owns(obj) and cb(obj, name) == true then return end
+            end
         end
     end
 
@@ -264,75 +284,64 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         return raw, effective, position
     end
 
-    local function apply_to_live_montage(montage, info)
-        if not valid(montage) then
-            return false
-        end
-
+    local function apply_to_anim(anim, owner_name, montage, info)
         local montage_name = full_name(montage)
         local target = info.target
         local speed = desired_speed(target)
-        local applied = false
 
-        for_each_primary_anim_instance(function(anim, owner_name)
-            if applied then return end
+        local before_raw, before_effective, before_position =
+            verify_montage_rate(anim, montage)
 
-            local ok, active = pcall(function()
-                return anim:GetCurrentActiveMontage()
-            end)
-
-
-            if not ok or not valid(active) then
-                return
-            end
-
-            if full_name(active) ~= montage_name then
-                return
-            end
-
-            local before_raw, before_effective, before_position =
-                verify_montage_rate(anim, montage)
-
-            local set_ok, set_err = pcall(function()
-                anim:Montage_SetPlayRate(montage, speed)
-            end)
-
-            if not set_ok then
-                log(
-                    "ERROR: Montage_SetPlayRate failed | kind=%s | owner=%s | montage=%s | %s",
-                    target.kind,
-                    owner_name,
-                    montage_name,
-                    tostring(set_err)
-                )
-                return
-            end
-
-            local after_raw, after_effective, after_position =
-                verify_montage_rate(anim, montage)
-
-            applied = true
-
-            log(
-                "LIVE RATE APPLIED | kind=%s | configured=%sx | raw %s -> %s | effective %s -> %s | owner=%s | montage=%s",
-                target.kind,
-                tostring(speed),
-                tostring(before_raw),
-                tostring(after_raw),
-                tostring(before_effective),
-                tostring(after_effective),
-                owner_name,
-                montage_name
-            )
-
-            debug_log(
-                "position %s -> %s | embedded=%s",
-                tostring(before_position),
-                tostring(after_position),
-                info.asset_name
-            )
+        local set_ok, set_err = pcall(function()
+            anim:Montage_SetPlayRate(montage, speed)
         end)
 
+        if not set_ok then
+            log(
+                "ERROR: Montage_SetPlayRate failed | kind=%s | owner=%s | montage=%s | %s",
+                target.kind,
+                owner_name,
+                montage_name,
+                tostring(set_err)
+            )
+            return
+        end
+
+        local after_raw, after_effective, after_position =
+            verify_montage_rate(anim, montage)
+
+        log(
+            "LIVE RATE APPLIED | kind=%s | configured=%sx | raw %s -> %s | effective %s -> %s | owner=%s | montage=%s",
+            target.kind,
+            tostring(speed),
+            tostring(before_raw),
+            tostring(after_raw),
+            tostring(before_effective),
+            tostring(after_effective),
+            owner_name,
+            montage_name
+        )
+
+        debug_log(
+            "position %s -> %s | embedded=%s",
+            tostring(before_position),
+            tostring(after_position),
+            info.asset_name
+        )
+        return true
+    end
+
+    local function apply_to_live_montage(montage, info)
+        if not valid(montage) then return false end
+        local montage_name = full_name(montage)
+        local applied = false
+        for_each_primary_anim_instance(function(anim, owner_name)
+            local ok, active = pcall(function() return anim:GetCurrentActiveMontage() end)
+            if ok and valid(active) and full_name(active) == montage_name then
+                applied = apply_to_anim(anim, owner_name, montage, info)
+                return applied -- Stop walking the cache after finding the owner.
+            end
+        end)
         return applied
     end
 
@@ -344,8 +353,11 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         local action_group = "montage:" .. montage_name
         actions:cancel_group(action_group, "new montage readiness cycle")
 
-        for _, delay_ms in ipairs(RETRY_MS) do
-            mission:schedule(action_group, delay_ms, function()
+        -- Keep only one pending callback per montage. A late game-thread dispatch
+        -- cannot dump all 13 prequeued retries into the same frame.
+        local function attempt(index)
+            local previous = index > 1 and RETRY_MS[index - 1] or 0
+            mission:schedule(action_group, RETRY_MS[index] - previous, function()
                 if not valid(montage) then return end
 
                 local info = target_montages[montage_name]
@@ -367,14 +379,13 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
 
                 if info then
                     if apply_to_live_montage(montage, info) then
-                        actions:cancel_group(
-                            action_group,
-                            "montage rate applied"
-                        )
+                        return
                     end
                 end
+                if index < #RETRY_MS then attempt(index + 1) end
             end, montage)
         end
+        attempt(1)
     end
 
     runtime:bind(
@@ -393,13 +404,15 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
     local function inspect_live_montages()
         if not mission or not mission:is_active() then return end
         local applied = false
-        for_each_primary_anim_instance(function(anim)
+        for_each_primary_anim_instance(function(anim, owner_name)
             local ok, montage = pcall(function() return anim:GetCurrentActiveMontage() end)
             if not ok or not valid(montage) then
                 return
             end
             local info = inspect_target_montage(montage)
-            if info and apply_to_live_montage(montage, info) then applied = true end
+            -- This owner is already validated and its active montage is known.
+            -- Do not search for the same owner a second time.
+            if info and apply_to_anim(anim, owner_name, montage, info) then applied = true end
         end)
         return applied
     end
@@ -430,7 +443,6 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         pcall(function()
             player = actor:GetSequencePlayer()
         end)
-
 
         if valid(player) then
             return player
@@ -517,12 +529,13 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         end)
 
         log(
-            "CAMERA RATE APPLIED | kind=%s | configured=%sx | play_rate %s -> %s | sequence=%s",
+            "CAMERA RATE APPLIED | kind=%s | configured=%sx | play_rate %s -> %s | sequence=%s | state=%s",
             target.kind,
             tostring(speed),
             tostring(before),
             tostring(after),
-            sequence_name
+            sequence_name,
+            full_name(state)
         )
 
         debug_log(
@@ -750,11 +763,13 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
             logger:transition("mission", "active", reason)
             register_shared_suffering_delay_hook()
             request_choreo_hooks()
+            seed_anim_instances()
             -- One inspection of currently playing montages supports hot reload.
             inspect_live_montages()
         end,
         on_stop = function(reason)
             target_montages = {}
+            anim_instances = {}
             choreo_hooks_registered = false
             -- Keep guarded hooks installed until teardown. Unregistering from an
             -- EndPlay/ability callback can invalidate UE4SS's current hook dispatch.
@@ -762,6 +777,13 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         end,
     })
     mission:install()
+
+    local prior_teardown = runtime.on_teardown
+    runtime.on_teardown = function(reason)
+        anim_instances = {}
+        target_montages = {}
+        if prior_teardown then prior_teardown(reason) end
+    end
 
     ----------------------------------------------------------------------------
     -- MXM live settings
@@ -784,11 +806,13 @@ function M.start(runtime, actions, logger, Settings, Targets, VERSION)
         end
 
         return string.format(
-            "resonance-transfer=%s@%sx | shared-suffering=%s@%sx",
+            "resonance-transfer=%s@%sx | shared-suffering=%s@%sx | unnatural-resilience=%s@%sx",
             state("resonance_transfer_enabled"),
             tostring(clamp_speed(Settings.Get("resonance_transfer_speed", 4.0))),
             state("shared_suffering_enabled"),
-            tostring(clamp_speed(Settings.Get("shared_suffering_speed", 4.0)))
+            tostring(clamp_speed(Settings.Get("shared_suffering_speed", 4.0))),
+            state("unnatural_resilience_enabled"),
+            tostring(clamp_speed(Settings.Get("unnatural_resilience_speed", 4.0)))
         )
     end
 

@@ -13,7 +13,8 @@ and does not change their gameplay effects.
 
 ## Features
 
-- Speeds up Resonance Transfer and Shared Suffering presentations.
+- Speeds up Resonance Transfer, Shared Suffering, and Unnatural Resilience
+  body animations and camera choreography.
 - Provides independent enable switches and speed multipliers for each ability.
 - Uses a `4.0x` default, configurable from `0.25x` to `8.0x`.
 - Supports live settings through
@@ -31,8 +32,15 @@ and does not change their gameplay effects.
 The Resonance Transfer multiplier controls:
 
 - Coil's transfer body animation;
+- the captured pistol Captain resonance animation and rifle non-surge transfer
+  reaction;
 - the Resonance Transfer camera choreography; and
 - the recipient Surge reaction animation.
+
+The additional body targets are `A_1HPistol_Coil_Captain_Resonance` and
+`A_2HRifle_Coil_PlagueTransfer_NonSurge`. Camera stages within the captured
+`SM_Resonate` state machine use the same multiplier. Matching the ability
+instance keeps generic camera assets unchanged when used by other abilities.
 
 ### Shared Suffering
 
@@ -46,6 +54,14 @@ The Shared Suffering multiplier controls:
 
 At the default `4.0x` multiplier, the two-second hold is reduced to
 approximately half a second.
+
+### Unnatural Resilience
+
+The Unnatural Resilience multiplier controls the captured Coil Brute body
+animation, `A_2HRifle_Coil_Brute_Tenacity_Start`. It has its own enable switch
+and defaults to `4.0x`. Camera stages within the captured `SM_Tenacity` state
+machine use that same setting. Disabling the ability restores both body and
+camera playback to `1.0x`.
 
 ## Requirements
 
@@ -104,7 +120,7 @@ for loader configuration details.
 
 ## Configuration
 
-MXM is optional. Without it, both abilities are enabled at `4.0x`.
+MXM is optional. Without it, all three abilities are enabled at `4.0x`.
 
 | Setting | Default | Range |
 | --- | ---: | ---: |
@@ -112,10 +128,22 @@ MXM is optional. Without it, both abilities are enabled at `4.0x`.
 | Resonance Transfer multiplier | `4.0x` | `0.25x`–`8.0x` in `0.25x` steps |
 | Enable Shared Suffering | On | On / Off |
 | Shared Suffering multiplier | `4.0x` | `0.25x`–`8.0x` in `0.25x` steps |
+| Enable Unnatural Resilience | On | On / Off |
+| Unnatural Resilience multiplier | `4.0x` | `0.25x`–`8.0x` in `0.25x` steps |
 
 With MXM installed, open **MOD SETTINGS** from the main menu or press `F2`.
 Changes are detected at runtime and apply to the next matching presentation.
 Set a multiplier to `1.0x` for vanilla timing.
+
+## Troubleshooting
+
+Use `fast_resonance.log` and `UE4SS.log` to check startup, mission readiness,
+and applied animation and camera rates. When reporting a hitch, include your
+speed settings and whether it happens on the first use, repeated uses, or both.
+
+The release build does not include the temporary hitch profiler or its scheduled
+probes. Leave the separate F8 animation probe idle when comparing performance;
+use it only when capturing an animation that appears to be missing coverage.
 
 ## Design
 
@@ -141,6 +169,15 @@ work within that mission. A one-time game-thread mission lookup also supports
 reloading the mod during combat. Pending work is cancelled on mission ending,
 actor EndPlay, map travel, and mission save reload. Animation instances and
 sequence states must belong to the active mission's world.
+
+Each mission activation seeds a humanoid animation-instance cache with one
+global search. Construction notifications add later instances after their
+construction callback unwinds. Playback walks this cache, removes invalid
+instances, and rechecks current mission ownership. Presentation inspection
+applies rates directly to its known owner instead of searching again. Each
+montage readiness cycle queues only its next retry, preventing a backlog of
+13 immediately runnable callbacks per montage after a stalled frame. Cache
+contents are cleared on mission changes and runtime teardown.
 
 Target names and settings mappings live in
 [`src/Fast Resonance/Scripts/targets.lua`](src/Fast%20Resonance/Scripts/targets.lua).
@@ -204,7 +241,7 @@ compile or bundle step.
    [FastResonance] Loaded v
    ```
 
-7. Exercise both supported abilities in game and verify their body animation,
+7. Exercise all three supported abilities in game and verify their body animation,
    camera sequence, reaction, and final delay behavior as applicable.
 
 The runtime tests cover production bootstrap/reload wiring, action ownership,
@@ -213,14 +250,16 @@ reuse. The bootstrap harness rejects loader-side object discovery and hook
 installation, and exercises delayed mission readiness, partial hook discovery,
 save loads, map changes, mission teardown, world isolation, and reused players.
 It also models exact class matching and separately loaded choreography functions,
-including recovery after a class event and failed hook installation.
+including recovery after a class event and failed hook installation. It also
+checks cached animation discovery, late-spawning characters, sequential retry
+bounds, per-ability settings, and camera context isolation.
 The mission model includes a streamed gameplay world whose level belongs to the
 root world used by characters and cinematics, and rejects unavailable, cyclic,
 or unrelated world ownership.
 
 For the startup fix, repeat cold launches on the affected UE4SS/Wine setup,
 then verify new missions, loading a combat save, mod reload during combat,
-mission restart/exit, and both supported abilities (including repeated uses
+mission restart/exit, and all three supported abilities (including repeated uses
 after changing settings). Check `fast_resonance.log` for mission transitions and
 readiness timeouts. The mocked scheduler cannot reproduce or prove elimination
 of UE4SS's native concurrency race; in-game verification remains required.
@@ -233,6 +272,12 @@ working. If discovery times out, its log entry names the missing functions.
 In-game validation on September 16, 2026 confirmed Resonance Transfer body and
 camera playback at 3x, and Shared Suffering body, camera, and confirmation
 playback at 4x, with its final delay reduced from 2 seconds to 0.5 seconds.
+Testing for v1.0.5 confirmed all added body animations were accelerated and no
+visible freezes were reported with the animation cache in place. Unnatural
+Resilience's camera was also confirmed at 4x in the log and visually in game.
+The Captain/non-surge camera path has automated coverage; its visual behavior
+has not yet been explicitly confirmed. The final build removes only temporary
+profiling from the tested playback paths and still needs a release smoke test.
 The intermittent startup crash still needs confirmation from the affected user.
 
 ## Releasing
@@ -253,11 +298,10 @@ Before running it:
    section, and leaves an empty Unreleased section.
 3. Verify the package through ZCOM Mod Manager and a clean manual UE4SS
    installation.
-4. Confirm both abilities with MXM installed and with MXM absent.
-5. Configure these repository secrets:
-   - `NEXUSMODS_API_KEY`: an API key permitted to update the mod.
-   - `NEXUSMODS_FILE_ID`: the Nexus Mods file ID to update, not the mod ID
-     (`154`).
+4. Confirm all three abilities with MXM installed and with MXM absent.
+5. Configure the `NEXUSMODS_API_KEY` repository secret with an API key permitted
+   to update the mod. The workflow resolves the Nexus mod and file IDs itself
+   and requires exactly one active file.
 
 Run the workflow manually from the repository's **Actions** tab. It:
 
@@ -265,7 +309,7 @@ Run the workflow manually from the repository's **Actions** tab. It:
   version;
 - reads the matching release notes from `CHANGELOG.md`;
 - packages `src/Fast Resonance` as `Fast Resonance V#.#.#.zip`; and
-- uploads the archive to Nexus Mods as `Fast Resonance.zip`.
+- uploads the archive to Nexus Mods as `Fast Resonance v#.#.#.zip`.
 
 Do not include repository-only files inside the `Fast Resonance` mod directory.
 

@@ -1,7 +1,7 @@
 return {
     id      = "FastResonance",
     name    = "Fast Resonance",
-    version = "1.0.4",
+    version = "1.0.5",
     description = "Speeds selected Coil Resonance ability presentations.",
 
     settings = {
@@ -23,6 +23,17 @@ return {
           desc = "Speeds Shared Suffering's body animation, camera, Confirm choreography, and final presentation delay together." },
 
         { key = "shared_suffering_speed", type = "number",
+          name = "Multiplier", default = 4.0,
+          min = 0.25, max = 8.0, step = 0.25,
+          desc = "1.0x is vanilla. 4.0x is the recommended default." },
+
+        { type = "header", name = "Unnatural Resilience" },
+
+        { key = "unnatural_resilience_enabled", type = "bool",
+          name = "Enable Unnatural Resilience", default = true,
+          desc = "Speeds the Coil Brute's Unnatural Resilience body animation and camera choreography together." },
+
+        { key = "unnatural_resilience_speed", type = "number",
           name = "Multiplier", default = 4.0,
           min = 0.25, max = 8.0, step = 0.25,
           desc = "1.0x is vanilla. 4.0x is the recommended default." },

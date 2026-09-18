@@ -10,11 +10,35 @@
 --     enabled: shared_suffering_enabled
 --     speed:   shared_suffering_speed
 --
+--   Unnatural Resilience
+--     enabled: unnatural_resilience_enabled
+--     speed:   unnatural_resilience_speed
+--
 -- Individual body/camera/facial/confirm pieces are implementation details and
 -- use the ability-level setting automatically.
 
 return {
     montages = {
+        {
+            kind = "unnatural-resilience-body",
+            token = "A_2HRifle_Coil_Brute_Tenacity_Start",
+            enabled_key = "unnatural_resilience_enabled",
+            speed_key = "unnatural_resilience_speed",
+        },
+        -- Captured from SM_Resonate: target these specific body assets without
+        -- broadening the match to unrelated Coil or generic Resonance assets.
+        {
+            kind = "resonate-captain-body",
+            token = "A_1HPistol_Coil_Captain_Resonance",
+            enabled_key = "resonance_transfer_enabled",
+            speed_key = "resonance_transfer_speed",
+        },
+        {
+            kind = "transfer-nonsurge-body",
+            token = "A_2HRifle_Coil_PlagueTransfer_NonSurge",
+            enabled_key = "resonance_transfer_enabled",
+            speed_key = "resonance_transfer_speed",
+        },
         {
             kind = "transfer-body",
             token = "Coil_PlagueTransfer_Surge",
@@ -36,6 +60,20 @@ return {
     },
 
     level_sequences = {
+        -- Match whole captured state-machine instance names, not generic asset
+        -- names. This covers each choreography stage only inside these abilities.
+        {
+            kind = "resonate-camera",
+            context_pattern = "%.SM_Resonate_C_%d+%.",
+            enabled_key = "resonance_transfer_enabled",
+            speed_key = "resonance_transfer_speed",
+        },
+        {
+            kind = "unnatural-resilience-camera",
+            context_pattern = "%.SM_Tenacity_C_%d+%.",
+            enabled_key = "unnatural_resilience_enabled",
+            speed_key = "unnatural_resilience_speed",
+        },
         {
             kind = "surge-camera",
             token = "LS_AG_PlagueTransfer_Surge_",

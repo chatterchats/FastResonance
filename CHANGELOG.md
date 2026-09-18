@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5]
+
+### Fixed
+
+- Reduce the hitch before Resonance animations by caching animation instances
+  per mission instead of repeatedly searching all game objects during playback.
+- Apply animation speed directly to the known character and queue readiness
+  retries one at a time, reducing work that can accumulate in a stalled frame.
+
+### Added
+
+- Speed up the Captain's resonance animation and the non-surge recipient
+  reaction, including camera choreography, with the Resonance Transfer settings.
+- Speed up Unnatural Resilience's body animation and camera choreography, with
+  its own enable switch and multiplier in MXM (4x by default).
+
+### Changed
+
+- Remove temporary hitch profiling, timing reports, and scheduler probes from
+  the release build. Keep normal playback, lifecycle, and error logging.
+
 ## [1.0.4]
 
 ### Fixed

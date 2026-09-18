@@ -8,7 +8,8 @@ local actors, anims, settings, output = {}, {}, {}, {}
 local class, fail_hook
 local loaded_functions = {}
 local CHOREO_CLASS = "/Game/Game/Cinematics/Blueprints/Stage/StateMachine/SMstate_PlayChoreographedSequence.SMstate_PlayChoreographedSequence_C"
-local scans, rate_writes, settings_registrations = 0, 0, 0
+local scans, anim_searches, rate_writes, settings_registrations = 0, 0, 0, 0
+local active_montage_reads = 0
 local function on_game_thread() assert(game_thread, "Unreal work during loader initialization") end
 local function wrap(obj) return { get = function() return obj end } end
 local function object(name)
@@ -73,6 +74,7 @@ function FindAllOf(name)
     assert(name ~= "AnimMontage", "must not scan resident montages")
     if name == "BRGameMissionActor" then return actors end
     assert(name == "AnimInstance")
+    anim_searches = anim_searches + 1
     return anims
 end
 -- UE4SS's string overload requires an exact class name. Blueprint-generated
@@ -191,17 +193,87 @@ local montage = object("AnimMontage /Game/Test.Reused")
 montage.SlotAnimTracks = array({{AnimTrack = {AnimSegments = array({{AnimReference = asset}})}}})
 local anim = object("AnimInstance /Game/MissionA.ABP_BR_Humanoid_Base_C_1")
 anim.GetWorld = function() return worlds.A end
-anim.GetCurrentActiveMontage = function() on_game_thread(); return montage end
+anim.GetCurrentActiveMontage = function()
+    on_game_thread(); active_montage_reads = active_montage_reads + 1; return montage
+end
 anim.Montage_GetPlayRate = function(self) return self.rate or 1 end
 anim.Montage_GetEffectivePlayRate = anim.Montage_GetPlayRate
 anim.Montage_GetPosition = function() return 0 end
 anim.Montage_SetPlayRate = function(self, _, rate) on_game_thread(); self.rate = rate; rate_writes = rate_writes + 1 end
 anims = {anim}
+local seeded_searches = anim_searches
+notify("/Script/Engine.AnimInstance", anim)
 notify("/Script/Engine.AnimMontage", montage)
 local stale = {}
 for _, handle in ipairs(pending()) do stale[#stale + 1] = queue[handle].callback end
 pump()
 assert(anim.rate == 4 and #pending() == 0, "successful montage must cancel its retries")
+
+-- The captured SM_Resonate body animations use the transfer setting independently
+-- of camera readiness. Exercise actual constructor retries.
+local surge_montage = montage
+for index, asset_name in ipairs({
+    "A_1HPistol_Coil_Captain_Resonance",
+    "A_2HRifle_Coil_PlagueTransfer_NonSurge",
+    "A_1HPistol_Crouch_Turn_L_90", -- nearby unrelated animation from the capture
+}) do
+    montage = object("AnimMontage /Game/Test.Captured_" .. index)
+    montage.SlotAnimTracks = array({{AnimTrack = {AnimSegments = array({{
+        AnimReference = object("AnimSequence /Game/" .. asset_name .. "." .. asset_name),
+    }})}}})
+    settings.resonance_transfer_speed = 3
+    anim.rate = 1
+    local before = rate_writes
+    notify("/Script/Engine.AnimMontage", montage); pump(250)
+    if index <= 2 then
+        assert(anim.rate == 3 and rate_writes == before + 1, asset_name .. " must use transfer speed")
+        settings.resonance_transfer_enabled = false
+        notify("/Script/Engine.AnimMontage", montage); pump(250)
+        assert(anim.rate == 1, asset_name .. " must respect the transfer enable switch")
+        settings.resonance_transfer_enabled = true
+        settings.resonance_transfer_speed = 2
+        notify("/Script/Engine.AnimMontage", montage); pump(250)
+        assert(anim.rate == 2, asset_name .. " must pick up changed settings")
+    else
+        assert(anim.rate == 1 and rate_writes == before, "unrelated turning animation must stay unchanged")
+    end
+    assert(#pending() == 0)
+end
+-- Unnatural Resilience has independent settings and must not affect the Brute's
+-- ordinary rifle animation captured immediately after the ability.
+settings.resonance_transfer_enabled = false
+settings.shared_suffering_enabled = false
+for index, asset_name in ipairs({
+    "A_2HRifle_Coil_Brute_Tenacity_Start",
+    "A_2HRifle_Aim_Enter_0",
+}) do
+    montage = object("AnimMontage /Game/Test.Tenacity_" .. index)
+    montage.SlotAnimTracks = array({{AnimTrack = {AnimSegments = array({{
+        AnimReference = object("AnimSequence /Game/" .. asset_name .. "." .. asset_name),
+    }})}}})
+    anim.rate = 1
+    local before = rate_writes
+    notify("/Script/Engine.AnimMontage", montage); pump(250)
+    if index == 1 then
+        assert(anim.rate == 4 and rate_writes == before + 1, "Tenacity must default to 4x independently")
+        settings.unnatural_resilience_speed = 3
+        notify("/Script/Engine.AnimMontage", montage); pump(250)
+        assert(anim.rate == 3, "Tenacity must use its own multiplier")
+        settings.unnatural_resilience_enabled = false
+        notify("/Script/Engine.AnimMontage", montage); pump(250)
+        assert(anim.rate == 1, "disabled Tenacity must restore vanilla speed")
+        settings.unnatural_resilience_enabled = true
+    else
+        assert(anim.rate == 1 and rate_writes == before, "ordinary rifle aiming must stay unchanged")
+    end
+    assert(#pending() == 0)
+end
+settings.unnatural_resilience_speed = nil
+settings.resonance_transfer_enabled = true
+settings.shared_suffering_enabled = true
+montage = surge_montage
+settings.resonance_transfer_speed = nil
+anim.rate = 4
 
 local player = object("Player Test")
 player.SetPlayRate = function(self, rate) self.rate = rate end
@@ -250,6 +322,145 @@ state["Level Sequence"] = target_sequence
 pump(5)
 assert(anim.rate == 2 and player.rate == 2, "late sequence assignment must remain retryable")
 
+-- Playback reuses the known owner without a second pass or background probes.
+local reads_before, writes_before = active_montage_reads, rate_writes
+event(hooks[CHOREO .. "OnStateBegin"].pre, wrap(state)); pump()
+assert(active_montage_reads == reads_before + 1, "presentation must not search twice for the same owner")
+assert(rate_writes == writes_before + 1 and #pending() == 0)
+pump(1000)
+assert(active_montage_reads == reads_before + 1 and rate_writes == writes_before + 1,
+    "successful presentation must leave no background playback work")
+assert(anim_searches == seeded_searches, "all playback and settings changes must use the mission cache")
+assert(not table.concat(output):find("HITCH", 1, true), "release must not emit temporary hitch diagnostics")
+
+-- Generic camera assets are eligible only within the captured ability instance.
+-- Cover both Resonate stages, all hook entry points, and independent settings.
+do
+    local generic_sequence = object("LevelSequence /Game/Test.GenericCamera")
+    local camera_writes = 0
+    local camera_player = object("Player AbilityCamera")
+    camera_player.GetPlayRate = function(self) return self.rate or 1 end
+    camera_player.SetPlayRate = function(self, rate)
+        self.rate = rate; camera_writes = camera_writes + 1
+    end
+    local camera_actor = object("LevelSequenceActor AbilityCamera")
+    camera_actor.GetSequencePlayer = function() return camera_player end
+    local function camera_state(machine, stage)
+        local value = object("SMstate_PlayChoreographedSequence_C /Game/MissionA.Runner."
+            .. machine .. ".SMstate_PlayChoreographedSequence_C_" .. (stage or 0))
+        value.GetWorld = function() return worlds.A end
+        value["Level Sequence"], value.LevelSequenceActor = generic_sequence, camera_actor
+        return value
+    end
+    settings.resonance_transfer_speed, settings.unnatural_resilience_speed = 3, 5
+    for _, machine in ipairs({"SM_Resonate_C_12", "SM_Tenacity_C_7"}) do
+        local tenacity = machine:find("Tenacity", 1, true) ~= nil
+        local key = tenacity and "unnatural_resilience_enabled" or "resonance_transfer_enabled"
+        for stage = 0, 1 do
+            local ability_state = camera_state(machine, stage)
+            for _, entry in ipairs({"OnStateBegin", "Play Sequence", "Sequence Play"}) do
+                local before = camera_writes
+                event(hooks[CHOREO .. entry].pre, wrap(ability_state)); pump(300)
+                assert(camera_writes == before + 1 and camera_player.rate == (tenacity and 5 or 3))
+            end
+            settings[key] = false
+            event(hooks[CHOREO .. "OnStateBegin"].pre, wrap(ability_state)); pump(300)
+            assert(camera_player.rate == 1, "disabling an ability must reset its reused camera")
+            settings[key] = true
+        end
+    end
+    for _, machine in ipairs({"SM_Unrelated_C_1", "Other_SM_Resonate_C_1",
+        "SM_Tenacity_C_7Extra", "SM_Resonate_C_", "SM_Tenacity_C_Default"}) do
+        local before = camera_writes
+        event(hooks[CHOREO .. "OnStateBegin"].pre, wrap(camera_state(machine))); pump(300)
+        assert(camera_writes == before, "generic cameras outside exact ability instances must be untouched")
+    end
+    local late_state = camera_state("SM_Tenacity_C_25")
+    late_state["Level Sequence"], late_state.LevelSequenceActor = nil, nil
+    local before = camera_writes
+    event(hooks[CHOREO .. "OnStateBegin"].pre, wrap(late_state)); pump()
+    assert(camera_writes == before, "a context match alone must not write without a sequence/player")
+    late_state["Level Sequence"] = generic_sequence
+    pump(5)
+    assert(camera_writes == before)
+    late_state.LevelSequenceActor = camera_actor
+    pump(10)
+    assert(camera_writes == before + 1 and camera_player.rate == 5, "late camera readiness must retry")
+    pump(1000)
+    late_state.GetWorld = function() return worlds.B end
+    before = camera_writes
+    event(hooks[CHOREO .. "OnStateBegin"].pre, wrap(late_state)); pump(300)
+    assert(camera_writes == before, "ability-scoped cameras must still belong to the active mission")
+    assert(anim_searches == seeded_searches, "new camera coverage must not reintroduce global searches")
+    assert(table.concat(output):find("kind=unnatural-resilience-camera", 1, true))
+    assert(table.concat(output):find("kind=resonate-camera", 1, true))
+    settings.resonance_transfer_speed, settings.unnatural_resilience_speed = 2, nil
+end
+
+-- An instance created after mission readiness is retained before its world is
+-- ready, then accepted at playback. No emergency global search is required.
+local original_active = anim.GetCurrentActiveMontage
+anim.GetCurrentActiveMontage = function() return nil end
+local late_world
+local late_anim = object("AnimInstance /Game/MissionA.ABP_BR_Humanoid_Base_C_Late")
+late_anim.GetWorld = function() return late_world end
+late_anim.GetCurrentActiveMontage = original_active
+late_anim.Montage_GetPlayRate = anim.Montage_GetPlayRate
+late_anim.Montage_GetEffectivePlayRate = anim.Montage_GetEffectivePlayRate
+late_anim.Montage_GetPosition = anim.Montage_GetPosition
+late_anim.Montage_SetPlayRate = anim.Montage_SetPlayRate
+notify("/Script/Engine.AnimInstance", late_anim)
+notify("/Script/Engine.AnimMontage", montage); pump()
+assert(late_anim.rate == nil, "not-yet-owned instances must not be written")
+late_world = worlds.A
+pump(250)
+assert(late_anim.rate == 2 and anim_searches == seeded_searches, "late instance must become usable without a search")
+
+-- Invalidated entries are evicted; replacements with the same name are accepted.
+late_anim.alive = false
+local writes_before_destroyed = rate_writes
+notify("/Script/Engine.AnimMontage", montage); pump(250)
+assert(rate_writes == writes_before_destroyed, "destroyed instances must never receive rate writes")
+local replacement = object("AnimInstance /Game/MissionA.ABP_BR_Humanoid_Base_C_Late")
+for key, value in pairs(late_anim) do
+    if key ~= "alive" and key ~= "GetFullName" and key ~= "rate" then replacement[key] = value end
+end
+notify("/Script/Engine.AnimInstance", replacement)
+notify("/Script/Engine.AnimMontage", montage); pump(250)
+assert(replacement.rate == 2 and anim_searches == seeded_searches)
+replacement.alive = false
+anim.GetCurrentActiveMontage = original_active
+
+-- A construction notification can arrive before the montage has tracks.
+local ready_montage = montage
+montage = object("AnimMontage /Game/Test.LateTracks")
+montage.SlotAnimTracks = array({})
+anim.rate = 1
+notify("/Script/Engine.AnimMontage", montage); pump()
+assert(anim.rate == 1 and #pending() == 1, "unready montage gets only one pending retry")
+montage.SlotAnimTracks = ready_montage.SlotAnimTracks
+pump(250)
+assert(anim.rate == 2 and #pending() == 0, "late tracks must still be detected")
+montage = ready_montage
+
+-- Reproduce the scale of the recorded mission-start burst: 440 montages must
+-- never create 5,720 simultaneously queued retries or trigger owner searches.
+for index = 1, 440 do
+    local unrelated = object("AnimMontage /Game/Test.Burst_" .. index)
+    unrelated.SlotAnimTracks = array({{AnimTrack = {AnimSegments = array({{
+        AnimReference = object("AnimSequence /Game/OrdinaryMovement"),
+    }})}}})
+    notify("/Script/Engine.AnimMontage", unrelated)
+end
+assert(#pending() == 440, "one queued callback per montage, not 13")
+local previous = 0
+for _, due in ipairs({0, 2, 5, 10, 15, 20, 30, 45, 60, 90, 130, 180, 250}) do
+    pump(due - previous)
+    previous = due
+    assert(#pending() <= 440)
+end
+assert(#pending() == 0 and anim_searches == seeded_searches)
+
 local duration = { get = function() return 2 end, set = function(self, value) self.value = value end }
 local delay_world = object("State /Game/MissionA.SM_SharedSuffering_C_1.SMstate_SimpleDelay_C_1")
 delay_world.GetWorld = function() return worlds.A end
@@ -285,6 +496,7 @@ local actor2 = mission_actor("B"); actors = {actor2}; anims = {}
 ready(actor2)
 local old_world_writes = rate_writes
 anims = {anim}
+notify("/Script/Engine.AnimInstance", anim)
 notify("/Script/Engine.AnimMontage", montage); pump(250)
 assert(rate_writes == old_world_writes, "never modify an animation instance in the retired world")
 anims = {}
@@ -306,6 +518,7 @@ event(old_hook, wrap(state))
 pump()
 assert(hooks[CHOREO .. "OnStateBegin"] and anim.rate == 2)
 assert(#notifications["/Script/Engine.AnimMontage"] == 1)
+assert(#notifications["/Script/Engine.AnimInstance"] == 1)
 assert(#notifications["/Script/CoreUObject.Class"] == 1)
 assert(#notifications[CLASS] == 1 and #lifecycle == 2 and settings_registrations == 1)
 

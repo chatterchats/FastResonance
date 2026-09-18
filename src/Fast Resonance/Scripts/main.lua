@@ -1,7 +1,7 @@
--- Fast Resonance v1.0.4
+-- Fast Resonance v1.0.5
 -- Loader-thread composition only. Do not scan UObjects or register feature
 -- callbacks here: zero-delay retries can otherwise run during registration.
-local VERSION = "1.0.4"
+local VERSION = "1.0.5"
 for _, module in ipairs({"hook_registry", "actions", "logging", "mission", "feature"}) do
     package.loaded[module] = nil
 end

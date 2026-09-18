@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "community.fast-resonance",
   "name": "Fast Resonance",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": "Chats",
-  "description": "Speeds Coil Resonance Transfer and Shared Suffering presentation timings with optional per-ability multipliers through MXM Config Manager.",
+  "description": "Speeds Coil Resonance Transfer, Shared Suffering, and Unnatural Resilience body animations and camera choreography with optional per-ability multipliers through MXM Config Manager.",
   "game": {
     "appId": 2075800,
     "testedBuilds": [
