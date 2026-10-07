@@ -2,6 +2,7 @@
 
 [![Nexus Mods](https://img.shields.io/badge/Nexus%20Mods-Fast%20Resonance-d98f40)](https://www.nexusmods.com/starwarszerocompany/mods/154)
 [![UE4SS](https://img.shields.io/badge/framework-UE4SS-6f42c1)](https://github.com/UE4SS-RE/RE-UE4SS)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2f7d4f)](LICENSE)
 
 Fast Resonance is a UE4SS Lua mod for **Star Wars: Zero Company** that
 shortens selected Coil Resonance presentation sequences without speeding up
@@ -281,7 +282,8 @@ The workflow:
 - requires `modinfo.json` and `zcom-mod.json` to hold the same `#.#.#`
   version;
 - reads that version's notes from `CHANGELOG.md`;
-- packages `src/Fast Resonance` as `Fast Resonance V#.#.#.zip`; and
+- packages `src/Fast Resonance`, with `LICENSE` added, as `Fast Resonance V#.#.#.zip`;
+  and
 - uploads it to Nexus as `Fast Resonance v#.#.#.zip`, finding the mod and its
   single active file through the API (exactly one active file is required).
 
@@ -303,5 +305,4 @@ scope.
 
 ## License
 
-This repository does not currently include a license. Unless one is added,
-the source remains subject to applicable copyright law.
+[MIT](LICENSE) © 2026 Chatter Chats. The release ZIP includes the license.

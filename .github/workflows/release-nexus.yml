@@ -141,6 +141,8 @@ jobs:
           PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
         run: |
           mkdir -p dist
+          # MIT: copies keep the license notice.
+          cp LICENSE "src/Fast Resonance/LICENSE"
           (cd src && zip -r "../dist/${PACKAGE_NAME}" "Fast Resonance")
           ln "dist/${PACKAGE_NAME}" "Fast Resonance v${{ steps.release.outputs.version }}.zip"
 
