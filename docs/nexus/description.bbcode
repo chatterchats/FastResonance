@@ -1,0 +1,87 @@
+[b]Fast Resonance[/b] makes the Coil's Resonance abilities feel much quicker and less disruptive by shortening the long animations and camera moments they play during combat.
+It speeds up only the presentation: the abilities do exactly what they did before, and you get back to playing sooner.
+Each supported ability can be switched on or off and given its own speed.
+
+[heading]Features[/heading]
+[list]
+[*][b]Fast Resonance Transfer[/b][/*]
+[*][b]Fast Shared Suffering[/b][/*]
+[*][b]Fast Unnatural Resilience[/b][/*]
+[*][b]Per-ability settings[/b]: an on/off switch and a speed multiplier for each ability.[/*]
+[*][b]Targeted[/b]: only these abilities are sped up, not combat in general.[/*]
+[/list]
+More Resonance abilities may be added in future versions as they are identified and tested. (I'm still quite early in the game, only just got past Cycle 23.)
+
+[heading]Using Fast Resonance[/heading]
+Install it and play: all three abilities run at [b]4x[/b] by default, chosen to feel noticeably faster without making the presentation disappear completely.
+To change the settings, install [url=https://www.nexusmods.com/starwarszerocompany/mods/149][b]MXM Config Manager[/b][/url] and open [b]MOD SETTINGS[/b] from the main menu (or press [b]F2[/b]). Each ability has two options:
+[list]
+[*][b]Enable / Disable[/b][/*]
+[*][b]Speed multiplier[/b], from 0.25x to 8x[/*]
+[/list]
+Changes apply to the next time the ability plays. Set the multiplier to [b]1x[/b] for the original timing.
+MXM Config Manager is optional. Without it, Fast Resonance uses the defaults.
+
+[heading]Requirements[/heading]
+[list]
+[*][b]Star Wars Zero Company[/b][/*]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/9]UE4SS for Star Wars Zero Company[/url][/*]
+[*][b]Optional:[/b] [url=https://www.nexusmods.com/starwarszerocompany/mods/149]MXM Config Manager[/url] for in-game settings[/*]
+[/list]
+Fast Resonance has been tested on the Steam release, game builds [b]24874058[/b] and [b]25134257[/b]. Other builds may work but should be treated as unverified. EA App compatibility has not been tested.
+
+[heading]Installation[/heading]
+[b]Mod manager[/b]
+Fast Resonance includes metadata for the community mod managers:
+[list]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/29]ZCOM Mod Manager[/url][/*]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/121]Zero Company Mod Command[/url][/*]
+[/list]
+Install the downloaded ZIP through either one and make sure Fast Resonance is enabled.
+
+[b]Manual installation[/b]
+Make sure UE4SS is installed and working, close the game, then extract the [b]Fast Resonance[/b] folder into:
+[code]SWZeroCompany/Binaries/Win64/ue4ss/Mods/[/code]
+The finished installation should contain:
+[code]ue4ss/Mods/Fast Resonance/Scripts/main.lua[/code]
+The package includes [b]enabled.txt[/b]. If your UE4SS setup doesn't pick it up, add this line to [b]ue4ss/Mods/mods.txt[/b]:
+[code]Fast Resonance : 1[/code]
+
+[heading]Compatibility[/heading]
+Fast Resonance only targets the specific presentation sequences used by the supported Resonance abilities. It doesn't globally speed up combat animations or camera sequences, so unrelated abilities and normal combat are unaffected.
+The Shared Suffering follow-up animation is also only sped up for Shared Suffering, not everywhere else the game uses that animation.
+Fast Resonance should coexist with most unrelated UE4SS mods, including my other mods below.
+
+[heading]Troubleshooting[/heading]
+Fast Resonance writes diagnostic information to [b]fast_resonance.log[/b] in its mod folder. [b]UE4SS.log[/b] remains the primary startup and crash log.
+When reporting a problem, please include:
+[list]
+[*]Your game build[/*]
+[*]Your UE4SS version[/*]
+[*]Your other installed mods[/*]
+[*]Which ability was affected and what happened[/*]
+[*][code]UE4SS.log[/code][/*]
+[*][code]fast_resonance.log[/code][/*]
+[/list]
+
+[heading]Why I Made This[/heading]
+Resonance is an interesting mechanic, but some of its presentation sequences are long enough to interrupt the flow of combat, especially when they trigger repeatedly during larger fights.
+Fast Resonance keeps the visual presentation while making it much quicker to get back to actually playing.
+
+[heading]Source Code and Issue Reports[/heading]
+Source, technical documentation and issue tracking are available on [url=https://github.com/chatterchats/FastResonance]GitHub[/url]. You can also post in the Bugs tab here on Nexus.
+
+[heading]Check Out My Other Mods[/heading]
+[list]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/176]Character Share[/url] — Share and import custom characters and Astromechs right from the Character Databank using compact copy-and-paste codes.[/*]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/209]Enhanced Databank[/url] — Folders for your custom characters and Astromechs: create, rename and delete them, and move characters between them, all through the game's own hidden pool system.[/*]
+[*][url=https://www.nexusmods.com/starwarszerocompany/mods/314]Colors+[/url] — Pick any color, not just the preset swatches: a custom color picker with live preview for clothing, armor, hair, skin, makeup, tattoos and blaster paint.[/*]
+[/list]
+
+[heading]Shout-outs[/heading]
+[list]
+[*][url=https://forums.nexusmods.com/profile/1661783-gugarion/]Gugarion[/url] and the [url=https://discord.gg/qpBkjjKSRp][b]ZCom Modding Discord[/b][/url] — for the shared knowledge, testing, discussion and help that make increasingly strange Zero Company modding ideas possible.[/*]
+[*]The [url=https://github.com/UE4SS-RE/RE-UE4SS][b]UE4SS-RE team[/b][/url] — for UE4SS itself and the runtime scripting, object inspection, hooking and UI tooling that make mods like this possible.[/*]
+[*][url=https://www.nexusmods.com/profile/Vercadi]Vercadi[/url] — for creating and maintaining the [url=https://www.nexusmods.com/starwarszerocompany/mods/9]UE4SS build for Star Wars Zero Company[/url] that Fast Resonance runs on.[/*]
+[*][url=https://www.nexusmods.com/profile/BlueRaja]BlueRaja[/url] — whose [url=https://www.nexusmods.com/starwarszerocompany/mods/147]Speedy Stims[/url] gave me the idea for this mod.[/*]
+[/list]
