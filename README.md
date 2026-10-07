@@ -231,6 +231,7 @@ compile or bundle step.
    luajit tests/bootstrap_test.lua "src/Fast Resonance/Scripts"
    luajit tests/logging_test.lua "src/Fast Resonance/Scripts"
    luajit tests/runtime_test.lua "src/Fast Resonance/Scripts"
+   python3 tests/nexus_changelog_test.py
    ```
 
 5. Reload all mods from the UE4SS GUI console, or use the configured hot-reload

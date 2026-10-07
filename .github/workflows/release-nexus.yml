@@ -30,6 +30,7 @@ jobs:
           import re
           import uuid
           from pathlib import Path
+          from scripts.nexus_changelog import nexus_changelog
 
           metadata_files = (
               Path("src/Fast Resonance/modinfo.json"),
@@ -37,16 +38,12 @@ jobs:
           )
           versions = {}
           for metadata_file in metadata_files:
-              if not metadata_file.is_file():
-                  continue
               with metadata_file.open(encoding="utf-8") as stream:
                   version = json.load(stream).get("version")
               if not isinstance(version, str) or not version.strip():
                   raise SystemExit(f"Missing version in {metadata_file}")
               versions[metadata_file] = version.strip()
 
-          if not versions:
-              raise SystemExit("Neither modinfo.json nor zcom-mod.json exists")
           if len(set(versions.values())) != 1:
               details = ", ".join(f"{path}: {version}" for path, version in versions.items())
               raise SystemExit(f"Metadata versions do not match: {details}")
@@ -55,15 +52,16 @@ jobs:
           if not re.fullmatch(r"\d+\.\d+\.\d+", version):
               raise SystemExit(f"Version must use #.#.# format, got {version!r}")
 
+          main_text = Path("src/Fast Resonance/Scripts/main.lua").read_text(encoding="utf-8")
+          main_match = re.search(r'^local VERSION = "([^"]+)"$', main_text, re.MULTILINE)
+          if main_match is None or main_match.group(1) != version:
+              raise SystemExit("main.lua VERSION does not match package metadata")
+
           changelog_text = Path("CHANGELOG.md").read_text(encoding="utf-8")
-          section = re.search(
-              rf"^## \[{re.escape(version)}\][^\n]*\n(?P<body>.*?)(?=^## \[|\Z)",
-              changelog_text,
-              flags=re.MULTILINE | re.DOTALL,
-          )
-          if section is None or not section.group("body").strip():
-              raise SystemExit(f"CHANGELOG.md has no non-empty [{version}] section")
-          changelog = section.group("body").strip()
+          try:
+              changelog = nexus_changelog(changelog_text, version)
+          except ValueError as error:
+              raise SystemExit(str(error)) from error
 
           delimiter = f"CHANGELOG_{uuid.uuid4().hex}"
           with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
@@ -136,7 +134,6 @@ jobs:
               output.write(f"mod_id={mod_id}\n")
               output.write(f"file_id={file_id}\n")
           PY
-
 
       - name: Package mod
         shell: bash
