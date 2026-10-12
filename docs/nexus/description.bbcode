@@ -1,25 +1,23 @@
-[b]Fast Resonance[/b] makes the Coil's Resonance abilities feel much quicker and less disruptive by shortening the long animations and camera moments they play during combat.
+[b]Fast Resonance[/b] makes the Coil's abilities feel much quicker and less disruptive by shortening the long animations, camera moments and pauses they play during combat.
 It speeds up only the presentation: the abilities do exactly what they did before, and you get back to playing sooner.
-Each supported ability can be switched on or off and given its own speed.
+One speed setting covers them all, and each ability can be switched on or off.
 
 [heading]Features[/heading]
 [list]
-[*][b]Fast Resonance Transfer[/b][/*]
-[*][b]Fast Shared Suffering[/b][/*]
-[*][b]Fast Unnatural Resilience[/b][/*]
-[*][b]Per-ability settings[/b]: an on/off switch and a speed multiplier for each ability.[/*]
+[*][b]Every Coil ability presentation[/b]: Resonance Transfer, Shared Suffering, Unnatural Resilience, Tenacity Heal, Miasma, Plague Surge, Scream, Devour, Bind, Cloak, Death Explosion, Life Beyond Death and Melee Strike.[/*]
+[*][b]Camera and body together[/b], plus the fixed pauses and effect timings inside each ability.[/*]
+[*][b]One speed setting[/b] and an on/off switch for each ability.[/*]
 [*][b]Targeted[/b]: only these abilities are sped up, not combat in general.[/*]
 [/list]
-More Resonance abilities may be added in future versions as they are identified and tested. (I'm still quite early in the game, only just got past Cycle 23.)
 
 [heading]Using Fast Resonance[/heading]
-Install it and play: all three abilities run at [b]4x[/b] by default, chosen to feel noticeably faster without making the presentation disappear completely.
-To change the settings, install [url=https://www.nexusmods.com/starwarszerocompany/mods/149][b]MXM Config Manager[/b][/url] and open [b]MOD SETTINGS[/b] from the main menu (or press [b]F2[/b]). Each ability has two options:
+Install it and play: every ability runs at [b]4x[/b] by default, chosen to feel noticeably faster without making the presentation disappear completely.
+To change the settings, install [url=https://www.nexusmods.com/starwarszerocompany/mods/149][b]MXM Config Manager[/b][/url] and open [b]MOD SETTINGS[/b] from the main menu (or press [b]F2[/b]):
 [list]
-[*][b]Enable / Disable[/b][/*]
-[*][b]Speed multiplier[/b], from 0.25x to 8x[/*]
+[*][b]Speed[/b], from 0.25x to 8x, for every enabled ability[/*]
+[*][b]An on/off switch[/b] for each ability[/*]
 [/list]
-Changes apply to the next time the ability plays. Set the multiplier to [b]1x[/b] for the original timing.
+Changes apply to the next time an ability plays. Set Speed to [b]1x[/b], or switch an ability off, for the original timing.
 MXM Config Manager is optional. Without it, Fast Resonance uses the defaults.
 
 [heading]Requirements[/heading]
@@ -48,12 +46,11 @@ The package includes [b]enabled.txt[/b]. If your UE4SS setup doesn't pick it up,
 [code]Fast Resonance : 1[/code]
 
 [heading]Compatibility[/heading]
-Fast Resonance only targets the specific presentation sequences used by the supported Resonance abilities. It doesn't globally speed up combat animations or camera sequences, so unrelated abilities and normal combat are unaffected.
-The Shared Suffering follow-up animation is also only sped up for Shared Suffering, not everywhere else the game uses that animation.
+Fast Resonance only changes what plays inside the Coil abilities' own presentations. It doesn't globally speed up combat animations, camera sequences or delays, so other abilities and normal combat are unaffected.
 Fast Resonance should coexist with most unrelated UE4SS mods, including my other mods below.
 
 [heading]Troubleshooting[/heading]
-Fast Resonance writes diagnostic information to [b]fast_resonance.log[/b] in its mod folder. [b]UE4SS.log[/b] remains the primary startup and crash log.
+Fast Resonance writes its diagnostic lines to [b]UE4SS.log[/b], with the [b][FastResonance][/b] prefix.
 When reporting a problem, please include:
 [list]
 [*]Your game build[/*]
@@ -61,7 +58,6 @@ When reporting a problem, please include:
 [*]Your other installed mods[/*]
 [*]Which ability was affected and what happened[/*]
 [*][code]UE4SS.log[/code][/*]
-[*][code]fast_resonance.log[/code][/*]
 [/list]
 
 [heading]Why I Made This[/heading]

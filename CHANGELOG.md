@@ -7,10 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Cover every Coil ability presentation: Resonate, Miasma, Tenacity Heal,
+  Plague Surge, Scream, Devour, Bind, Cloak, Death Explosion, Life Beyond Death
+  and Melee Strike, each with its own MXM toggle.
+- Speed up Shared Suffering's damage redirect (the hit effect's travel and its
+  end hold), Unnatural Resilience's opening hold, and the plague transfer
+  bridge's build and travel times.
+
 ### Changed
 
+- Rewrite as a single script. Body animations play inside each ability's
+  sequence, so the sequence play rate now speeds the camera and body together;
+  the montage tracking, mission tracking, retry queues and global `Delay` hook
+  are gone.
+- Set holds and effect timings once on each ability's state-machine node
+  templates instead of intercepting them on every cast.
+- Replace the three per-ability multipliers with one Speed setting that
+  applies to every enabled ability.
 - Format release notes as single-line, category-prefixed plain-text entries when
   publishing to Nexus Mods, while retaining the readable Keep a Changelog source.
+
+### Removed
+
+- The dedicated `fast_resonance.log`; diagnostics are in `UE4SS.log`.
 
 ## [1.0.5]
 
