@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "community.fast-resonance",
   "name": "Fast Resonance",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "author": "Chats",
   "description": "Speeds up the Coil's ability presentations (camera, body animation and pauses) without speeding up combat, with one speed setting and per-ability switches through MXM Config Manager.",
   "game": {

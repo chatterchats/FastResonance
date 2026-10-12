@@ -5,7 +5,7 @@
 --     sequence, so its play rate covers both;
 --   * fixed holds (SimpleDelay) and effect build/travel times are shortened on
 --     the state machine's node templates, which the game copies for every cast.
-local VERSION = "1.0.5"
+local VERSION = "1.1.0"
 local Config = require("MXM")
 
 -- MXM toggle -> the ability state machines it covers.
