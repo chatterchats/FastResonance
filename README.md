@@ -171,6 +171,7 @@ is at the top of `main.lua`.
 │   ├── enabled.txt
 │   ├── modinfo.json                      # Zero Company Mod Command
 │   └── zcom-mod.json                     # Zero Mod Manager
+├── src/ResonanceProbe/                   # development probe, never shipped (see below)
 └── tests/nexus_changelog_test.py         # release-notes formatter test
 ```
 
@@ -191,6 +192,13 @@ bundle step. Keep repository-only files out of it.
    reload), check that `UE4SS.log` has `[FastResonance] v… loaded`, then fight
    Coil units and check each changed ability's camera, body animation and
    holds.
+
+`src/ResonanceProbe` is the development probe the rewrite was built from. Run
+it with Fast Resonance disabled so rates are vanilla: it logs, with the
+`[ResonanceProbe]` prefix, every state inside a Coil ability's state machine,
+each node class's numeric settings, the sequences played and the animations
+they drive, and every new state machine the game creates (to find abilities
+not covered yet). It's slow and noisy; don't leave it enabled.
 
 ### Verification status
 
