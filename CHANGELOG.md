@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Mark game builds 25898267 and 26445778 as tested in the mod manager
+  metadata, replacing the older builds.
+
 ## [1.1.0]
 
 ### Added
