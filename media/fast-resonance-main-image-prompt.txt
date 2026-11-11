@@ -1,0 +1,18 @@
+Generated using the built-in image_gen tool.
+
+Final export: proportionally resized and center-cropped to exactly 1920x1080
+pixels. No stretching. Saved as fast-resonance-main-image.png.
+
+Use case: ads-marketing.
+Asset type: polished 1920x1080 Nexus Mods main image / thumbnail for the Star Wars: Zero Company mod Fast Resonance.
+Primary request: create the matching 16:9 main-image version of the supplied Fast Resonance header, following the established thumbnail composition of Skip Space Travel and Enhanced Databank.
+Input images: Image 1 (Fast Resonance banner) is the primary DESIGN REFERENCE for the correct title, resonance emblem, typography, cyan palette and HUD lines. Image 2 (Skip Space Travel main image) and Image 3 (Enhanced Databank main image) are COMPOSITION REFERENCES for translating the series to landscape 16:9. Create a new matching asset; never show these reference images as an inset or mockup.
+Output framing: landscape 16:9, intended final size exactly 1920x1080 pixels, full bleed with no letterboxing or external margins.
+Scene/backdrop: closely match the near-black midnight navy subtly cloudy texture and symmetrical delicate cyan HUD framing of the references: angular side borders, restrained side ticks, faint large concentric radar rings and a delicate central crosshair. Same reference line arrangement and visual density.
+Subject: preserve the exact Fast Resonance emblem from Image 1: one sharp cyan lightning bolt through a circular resonance ring, with two short nested curved wave arcs on each side. Keep the identical geometry, cool cyan metallic bevel and restrained luminous glow. Center it prominently in the upper-middle region, enclosed by the radar arc, at approximately x=960 y=360 with an emblem height around 260 pixels.
+Text (verbatim): "FAST RESONANCE". Exactly these two words in a single straight horizontal line centered below the emblem at approximately y=620. No other text.
+Typography: same tall heavy condensed uppercase sans-serif, crisp silver-white vertical metallic gradient, subtle clean texture and depth as Image 1. Title spans approximately 72 percent of canvas width with generous side margins; lettering around 160 pixels tall. Make it highly legible at small thumbnail sizes and match the other main images' hierarchy.
+Composition: use the taller canvas naturally, with the cyan side rails inward beside the emblem and below the title, as in Images 2 and 3. Elegant symmetrical negative space above and below. Keep icon and title fully inside the safe area.
+Color palette: midnight navy, black, cool silver-white, luminous cyan only.
+Constraints: maintain consistency with the Fast Resonance banner and the existing mod series. Accurate crisp title and clean matching emblem. No subtitle, tagline, speed badge, extra words, watermark, Star Wars logo, Nexus logo, rainbow colors, character art, spacecraft, promotional mockup or external surround.
+

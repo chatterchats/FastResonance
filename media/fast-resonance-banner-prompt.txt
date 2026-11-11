@@ -1,0 +1,17 @@
+Generated using the built-in image_gen tool.
+
+Final export: proportionally resized to 1300 pixels wide, then center-cropped
+to exactly 1300x372 pixels. No stretching. Saved as fast-resonance-banner.png.
+
+Use case: ads-marketing.
+Asset type: finished Nexus Mods header for the Star Wars: Zero Company mod Fast Resonance.
+Primary request: regenerate the mod's header in the same established design series as Skip Space Travel, Colors+, and Enhanced Databank.
+Input images: Image 1 (Skip Space Travel banner) and Image 2 (Enhanced Databank banner) are primary STYLE AND LAYOUT REFERENCES. Image 3 (Colors+ banner) is a secondary reference for the same graphic design system. Create a new matching Fast Resonance asset, not an inset or collage of the references.
+Output framing: very wide landscape header, intended final size 1300x372 pixels (aspect ratio 3.4946:1), full bleed. Keep all icon and lettering safely in the central 80 percent of the height so the final wide banner can be exported without clipping important content.
+Scene/backdrop: closely match the near-black midnight navy cloudy texture, delicate cyan concentric radar rings, central crosshair, symmetrical angular HUD lines from all four corners, thin title-panel rails, and short vertical side ticks in the references. Restrained and clean.
+Subject: replace the reference icons with one crisp compact cyan resonance-pulse emblem centered above the title. A bold angular lightning bolt running through a circular resonance ring, with two short nested curved wave arcs on each side; a simple cohesive symbol of faster resonance. Cool cyan metallic bevel and gentle glow, matching the reference icons. Keep the emblem in the upper-center region and separate from the lettering.
+Text (verbatim): "FAST RESONANCE". Exactly these two words in one straight horizontal line, centered across the middle title panel.
+Typography: same tall heavy condensed uppercase sans-serif as the reference banners, cool silver-white vertical metallic gradient, clean crisp edges, subtle texture and restrained depth. Make the title large and prominent, spanning approximately 65 to 75 percent of the banner width with comfortable side margins.
+Color palette: midnight navy, black, cool silver-white, luminous cyan only, matching Skip Space Travel and Enhanced Databank.
+Constraints: preserve the series' symmetrical framing, alignment, visual hierarchy and elegant negative space. Accurate legible text and clean distinct icon. No subtitle, tagline, numerical speed badge, extra words, watermark, Star Wars logo, Nexus logo, rainbow, character scene, spacecraft, mockup, white surround or external margins.
+
