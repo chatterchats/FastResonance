@@ -1,0 +1,1 @@
+Shortens the Coil's ability presentations (camera, body animation, holds) without speeding up combat; speed and each ability are configurable in MXM.
